@@ -18,6 +18,12 @@ func main() {
 	w := mat.NewVecDense(3, nil) // set the struct to nil b/c it's a pointer
 	w.AddVec(a, b)
 
+	x := mat.NewVecDense(1, nil) // receive a vector vector multication... needs a 1x1
+	// a.MulVec(a.T(), b) this does not work b/c a is not 1 x 1 ... damn
+	x.MulVec(a.T(), b)
+
+	matPrint(x)
+
 	matPrint(w)
 
 	w.AddScaledVec(a, 2, b) // a + 2 * b
