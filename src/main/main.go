@@ -21,8 +21,14 @@ func main() {
 	x := mat.NewVecDense(1, nil) // receive a vector vector multication... needs a 1x1
 	// a.MulVec(a.T(), b) this does not work b/c a is not 1 x 1 ... damn
 	x.MulVec(a.T(), b)
+	// a' * b
+
+	xx := mat.NewDense(3, 3, nil)
+	xx.Mul(a, b.T()) // vector to vector multi
+	// a * b'
 
 	matPrint(x)
+	matPrint(xx)
 
 	matPrint(w)
 
