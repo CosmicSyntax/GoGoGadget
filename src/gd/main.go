@@ -7,15 +7,17 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"unsafe"
 )
 
-type house struct {
-	sqFeet  int
-	bedRoom int
-	price   int
-}
+type housing []int
+
+var data map[string]housing
+
+var dataVar = []string{"sqFeet", "bedRoom", "price"}
 
 func main() {
+
 	// Open the text file
 	csvF, _ := os.Open("./ex1data2.csv")
 	defer csvF.Close()
@@ -24,7 +26,11 @@ func main() {
 
 	// Read file...
 
-	var housing []house
+	data = make(map[string]housing) // initialize the map
+
+	for _, vars := range dataVar {
+		data[vars] = housing{}
+	}
 
 	for {
 
@@ -39,13 +45,17 @@ func main() {
 		var2, _ := strconv.Atoi(line[1])
 		var3, _ := strconv.Atoi(line[2])
 
-		housing = append(housing, house{
-			sqFeet:  var1,
-			bedRoom: var2,
-			price:   var3,
-		})
+		data["sqFeet"] = append(data["sqFeet"], var1)
+		data["bedRoom"] = append(data["bedRoom"], var2)
+		data["price"] = append(data["price"], var3)
+
 	}
 
-	fmt.Println(housing)
+	var test int // for checking size of data
+
+	for _, vars := range dataVar {
+		fmt.Println(vars+":", data[vars])
+		fmt.Println("Size on mem:", int(unsafe.Sizeof(test))*len(data[vars])) // size of each slice
+	}
 
 }
