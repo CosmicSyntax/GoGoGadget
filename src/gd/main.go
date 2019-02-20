@@ -5,12 +5,15 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"unsafe"
+
+	"gonum.org/v1/gonum/mat"
 )
 
-type housing []int
+type housing []float64
 
 var data map[string]housing
 
@@ -45,17 +48,52 @@ func main() {
 		var2, _ := strconv.Atoi(line[1])
 		var3, _ := strconv.Atoi(line[2])
 
-		data["sqFeet"] = append(data["sqFeet"], var1)
-		data["bedRoom"] = append(data["bedRoom"], var2)
-		data["price"] = append(data["price"], var3)
+		data["sqFeet"] = append(data["sqFeet"], float64(var1))
+		data["bedRoom"] = append(data["bedRoom"], float64(var2))
+		data["price"] = append(data["price"], float64(var3))
 
 	}
 
-	var test int // for checking size of data
+	var test float64 // for checking size of data
 
 	for _, vars := range dataVar {
 		fmt.Println(vars+":", data[vars])
 		fmt.Println("Size on mem:", int(unsafe.Sizeof(test))*len(data[vars])) // size of each slice
 	}
 
+	// Linear alebgra set up...
+	length := len(data["sqFeet"])
+
+	// Theta...
+	theta := mat.NewDense(2, 1, []float64{0, 0})
+	// MP(theta)
+
+	// Training sets...
+	training := mat.NewDense(length, 2, nil)
+	training.SetCol(0, data["sqFeet"])
+	training.SetCol(1, data["bedRoom"])
+	// MP(training)
+
+	// Training * Theta
+	TT := mat.NewDense(length, 1, nil)
+	TT.Product(training, theta)
+	MP(TT)
+
+	// Vector Prices
+	yHat := mat.NewDense(length, 1, data["price"])
+	MP(yHat)
+
+	// Subtraction
+	TT.Sub(TT, yHat)
+	sum := TT.At(0, 0)
+	fmt.Println("Sum:", sum)
+
+	costFunction := math.Pow(sum, 2) * float64(1/(2*float64(length)))
+	fmt.Printf("Cost Function: %e", costFunction)
+
+}
+
+func MP(X mat.Matrix) {
+	fa := mat.Formatted(X, mat.Prefix(""), mat.Squeeze())
+	fmt.Printf("%v\n", fa)
 }
