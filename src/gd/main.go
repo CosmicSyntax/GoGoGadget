@@ -65,14 +65,22 @@ func main() {
 	length := len(data["sqFeet"])
 
 	// Theta...
-	theta := mat.NewDense(2, 1, []float64{0, 0})
-	// MP(theta)
+	theta := mat.NewDense(3, 1, []float64{0, 0, 0}) // possible answer 139.21067X1 - 8738.01911X2 + 89597.90954
+	MP(theta)
 
 	// Training sets...
-	training := mat.NewDense(length, 2, nil)
-	training.SetCol(0, data["sqFeet"])
-	training.SetCol(1, data["bedRoom"])
-	// MP(training)
+	training := mat.NewDense(length, 3, nil)
+	theta0 := make([]float64, length)
+
+	for i, _ := range theta0 {
+		theta0[i] = 1
+	}
+	// fmt.Println(theta0)
+
+	training.SetCol(0, theta0)
+	training.SetCol(1, data["sqFeet"])
+	training.SetCol(2, data["bedRoom"])
+	MP(training)
 
 	// Training * Theta
 	TT := mat.NewDense(length, 1, nil)
