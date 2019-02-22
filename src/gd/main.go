@@ -5,9 +5,9 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"strconv"
+	"time"
 	"unsafe"
 
 	"gonum.org/v1/gonum/mat"
@@ -64,6 +64,10 @@ func main() {
 	// Linear alebgra set up...
 	length := len(data["sqFeet"])
 
+	// Setting the learning rate
+
+	alpha := float64(0.00000001)
+
 	// Theta...
 	theta := mat.NewDense(3, 1, []float64{0, 0, 0}) // possible answer 139.21067X1 - 8738.01911X2 + 89597.90954
 	MP(theta)
@@ -82,22 +86,36 @@ func main() {
 	training.SetCol(2, data["bedRoom"])
 	MP(training)
 
-	// Training * Theta
-	TT := mat.NewDense(length, 1, nil)
-	TT.Product(training, theta)
-	MP(TT)
-
 	// Vector Prices
 	yHat := mat.NewDense(length, 1, data["price"])
 	MP(yHat)
 
-	// Subtraction
-	TT.Sub(TT, yHat)
-	sum := TT.At(0, 0)
-	fmt.Println("Sum:", sum)
+	// ---- START MATH ---- //
 
-	costFunction := math.Pow(sum, 2) * float64(1/(2*float64(length)))
-	fmt.Printf("Cost Function: %e", costFunction)
+	for {
+		TT := mat.NewDense(length, 1, nil)
+		TT.Product(training, theta)
+		TT.Sub(TT, yHat)
+
+		DT := mat.NewDense(3, 1, nil)
+		DT.Product(training.T(), TT)
+
+		DT.Scale(1/float64(length), DT)
+		DT.Scale(alpha, DT)
+
+		theta.Sub(theta, DT)
+
+		// MP(theta)
+
+		// calculate cost F(x)
+		costFunc := mat.NewDense(1, 1, nil)
+		costFunc.Product(TT.T(), TT)
+		costFunc.Scale(1/float64(length), costFunc)
+
+		fmt.Println(costFunc.At(0, 0))
+
+		time.Sleep(10 * time.Millisecond)
+	}
 
 }
 
