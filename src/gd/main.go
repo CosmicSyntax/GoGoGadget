@@ -66,7 +66,7 @@ func main() {
 
 	// Setting the learning rate
 
-	alpha := float64(0.00000001)
+	alpha := float64(0.01)
 
 	// Theta...
 	theta := mat.NewDense(3, 1, []float64{0, 0, 0}) // possible answer 139.21067X1 - 8738.01911X2 + 89597.90954
@@ -81,6 +81,27 @@ func main() {
 	}
 	// fmt.Println(theta0)
 
+	// Feature scaling...
+	m := float64(0)
+	for i, e := range data["sqFeet"] {
+		if i == 0 || e > m {
+			m = e
+		}
+	}
+	for i, _ := range data["sqFeet"] {
+		data["sqFeet"][i] = data["sqFeet"][i] / m
+	}
+
+	m = 0
+	for i, e := range data["bedRoom"] {
+		if i == 0 || e > m {
+			m = e
+		}
+	}
+	for i, _ := range data["bedRoom"] {
+		data["bedRoom"][i] = data["bedRoom"][i] / m
+	}
+
 	training.SetCol(0, theta0)
 	training.SetCol(1, data["sqFeet"])
 	training.SetCol(2, data["bedRoom"])
@@ -92,7 +113,7 @@ func main() {
 
 	// ---- START MATH ---- //
 
-	for {
+	for i := 0; ; i++ {
 		TT := mat.NewDense(length, 1, nil)
 		TT.Product(training, theta)
 		TT.Sub(TT, yHat)
@@ -100,19 +121,24 @@ func main() {
 		DT := mat.NewDense(3, 1, nil)
 		DT.Product(training.T(), TT)
 
+		//MP(DT)
+
 		DT.Scale(1/float64(length), DT)
 		DT.Scale(alpha, DT)
 
+		//MP(DT)
+		//MP(theta)
+
 		theta.Sub(theta, DT)
 
-		// MP(theta)
+		//MP(theta)
 
 		// calculate cost F(x)
 		costFunc := mat.NewDense(1, 1, nil)
 		costFunc.Product(TT.T(), TT)
 		costFunc.Scale(1/float64(length), costFunc)
 
-		fmt.Println(costFunc.At(0, 0))
+		fmt.Println(strconv.Itoa(i)+":", costFunc.At(0, 0))
 
 		time.Sleep(10 * time.Millisecond)
 	}
