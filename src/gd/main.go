@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"time"
@@ -28,7 +29,6 @@ func main() {
 	r := csv.NewReader(buf)
 
 	// Read file...
-
 	data = make(map[string]housing) // initialize the map
 
 	for _, vars := range dataVar {
@@ -61,19 +61,18 @@ func main() {
 		fmt.Println("Size on mem:", int(unsafe.Sizeof(test))*len(data[vars])) // size of each slice
 	}
 
-	// Linear alebgra set up...
+	// Get size of training set
 	length := len(data["sqFeet"])
 
 	// Setting the learning rate
-
-	alpha := float64(0.01)
+	var alpha float64 = .03
 
 	// Theta...
 	theta := mat.NewDense(3, 1, []float64{0, 0, 0}) // possible answer 139.21067X1 - 8738.01911X2 + 89597.90954
 	MP(theta)
 
 	// Training sets...
-	training := mat.NewDense(length, 3, nil)
+	//training := mat.NewDense(length, 3, nil)
 	theta0 := make([]float64, length)
 
 	for i, _ := range theta0 {
@@ -82,24 +81,47 @@ func main() {
 	// fmt.Println(theta0)
 
 	// Feature scaling...
-	m := float64(0)
-	for i, e := range data["sqFeet"] {
-		if i == 0 || e > m {
-			m = e
+	// (xi - ui) / stdi
+	// Calculate the mean
+	var meanSq float64
+	var meanBr float64
+
+	for i, n := range data["sqFeet"] {
+		meanSq += n
+		if i == length-1 {
+			meanSq = meanSq / float64(length)
 		}
 	}
-	for i, _ := range data["sqFeet"] {
-		data["sqFeet"][i] = data["sqFeet"][i] / m
+	for i, n := range data["bedRoom"] {
+		meanBr += n
+		if i == length-1 {
+			meanBr = meanBr / float64(length)
+		}
 	}
 
-	m = 0
-	for i, e := range data["bedRoom"] {
-		if i == 0 || e > m {
-			m = e
-		}
+	var stdSq float64
+	var stdBr float64
+
+	for i := 0; i < length; i++ {
+		// for Sq
+		stdSq += math.Pow(data["sqFeet"][i]-meanSq, 2)
+		// for Br
+		stdBr += math.Pow(data["bedRoom"][i]-meanBr, 2)
 	}
-	for i, _ := range data["bedRoom"] {
-		data["bedRoom"][i] = data["bedRoom"][i] / m
+
+	stdSq = math.Sqrt(stdSq / float64(length-1))
+	stdBr = math.Sqrt(stdBr / float64(length-1))
+
+	// apply to data
+	for i := 0; i < length; i++ {
+		data["sqFeet"][i] = (data["sqFeet"][i] - meanSq) / stdSq
+		data["bedRoom"][i] = (data["bedRoom"][i] - meanBr) / stdBr
+	}
+
+	// making the training set
+	training := mat.NewDense(length, 3, nil)
+	for i, _ := range theta0 {
+		theta0[i] = 1
 	}
 
 	training.SetCol(0, theta0)
@@ -107,38 +129,23 @@ func main() {
 	training.SetCol(2, data["bedRoom"])
 	MP(training)
 
-	// Vector Prices
 	yHat := mat.NewDense(length, 1, data["price"])
-	MP(yHat)
-
-	// ---- START MATH ---- //
 
 	for i := 0; ; i++ {
-		TT := mat.NewDense(length, 1, nil)
-		TT.Product(training, theta)
-		TT.Sub(TT, yHat)
+		// Gradient
+		grad := mat.NewDense(3, 1, nil)
+		tXt := mat.NewDense(length, 1, nil)
+		tXt.Product(training, theta)
+		tXt.Sub(tXt, yHat)
 
-		DT := mat.NewDense(3, 1, nil)
-		DT.Product(training.T(), TT)
+		grad.Product(training.T(), tXt)
+		grad.Scale(1/float64(length), grad)
 
-		//MP(DT)
+		// apply alpha and change theta
+		grad.Scale(alpha, grad)
+		theta.Sub(theta, grad)
 
-		DT.Scale(1/float64(length), DT)
-		DT.Scale(alpha, DT)
-
-		//MP(DT)
-		//MP(theta)
-
-		theta.Sub(theta, DT)
-
-		//MP(theta)
-
-		// calculate cost F(x)
-		costFunc := mat.NewDense(1, 1, nil)
-		costFunc.Product(TT.T(), TT)
-		costFunc.Scale(1/float64(length), costFunc)
-
-		fmt.Println(strconv.Itoa(i)+":", costFunc.At(0, 0))
+		MP(theta)
 
 		time.Sleep(10 * time.Millisecond)
 	}
