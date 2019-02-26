@@ -102,3 +102,26 @@ func test404(t *testing.T) {
 	}
 
 }
+
+func testStaticFileServer(t *testing.T) {
+	r := newRouter()
+	fakeServer := httptest.NewServer(r)
+
+	res, err := http.Get(fakeServer.URL + "/static/")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("Status should be 200, got %d", res.StatusCode)
+	}
+
+	// check some of the http content
+	contentType := res.Header.Get("Content-Type")
+	contentWant := "text/html; charset=utf-8"
+
+	if contentType != contentWant {
+		t.Errorf("Wrong content type, expected %s, got %s", contentWant, contentType)
+	}
+
+}
